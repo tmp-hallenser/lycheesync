@@ -57,7 +57,8 @@ class LycheeSyncer:
 
         # join the rest: no subfolders in lychee yet
         if len(path) > 1:
-            album['name'] = "_".join(path)
+            #album['name'] = "_".join(path)
+            album['name'] = path[len(path)-1]
         else:
             album['name'] = alb_path_utf8
         return album['name']
@@ -127,6 +128,77 @@ class LycheeSyncer:
         img.save(destimage, quality=99)
         return destimage
 
+    def scale(self, res, photo, destinationpath):
+        """
+        Create the scaled version of a given photo
+        Parameters:
+        - res: should be a set of h and v res
+        - photo: a valid LycheePhoto object
+        - destinationpath: a string the destination full path of the thumbnail (without filename)
+        """
+
+
+        destimage = os.path.join(destinationpath, photo.url)
+        try:
+            img = Image.open(photo.destfullpath)
+        except Exception as e:
+            logger.exception(e)
+            logger.error("ioerror (corrupted file?): " + photo.srcfullpath)
+            raise
+
+        img.thumbnail(res, Image.ANTIALIAS)
+        img.save(destimage, quality=99)
+
+
+    def makeSmall(self, photo):
+        """
+        Make the small image which is needed by Lychee for a given photo
+        and update flag in the photo object
+        Parameters:
+        - photo: a valid LycheePhoto object
+        returns nothing
+        """
+        if (photo.height > 360):
+            # set height
+            height = 360
+            width = (photo.width / photo.height) * height
+
+            if (width > 640):
+                width = 640
+                height = (photo.height / photo.width) * width
+
+            # compute destination path
+            destpath = os.path.join(self.conf["lycheepath"], "uploads", "small")
+
+            # make small version of image
+            photo.small = 1
+            self.scale((width, height), photo, destpath)
+
+    def makeMedium(self, photo):
+        """
+        Make the medium image which is needed by Lychee for a given photo
+        and update flag in the photo object
+        Parameters:
+        - photo: a valid LycheePhoto object
+        returns nothing
+        """
+        if (photo.height > 1080):
+            # set height
+            height = 1080
+            width = (photo.width / photo.height) * height
+
+            if (width > 1920):
+                width = 1920
+                height = (photo.height / photo.width) * width
+
+            # compute destination path
+            destpath = os.path.join(self.conf["lycheepath"], "uploads", "medium")
+
+            # make small version of image
+            photo.medium = 1
+            self.scale((width, height), photo, destpath)
+
+
     def makeThumbnail(self, photo):
         """
         Make the 2 thumbnails needed by Lychee for a given photo
@@ -187,7 +259,7 @@ class LycheeSyncer:
 
     def deleteFiles(self, filelist):
         """
-        Delete files in the Lychee file tree (uploads/big and uploads/thumbnails)
+        Delete files in the Lychee file tree (uploads/small, uploads/medium, uploads/big and uploads/thumbnails)
         Give it the file name and it will delete relatives files and thumbnails
         Parameters:
         - filelist: a list of filenames
@@ -200,9 +272,13 @@ class LycheeSyncer:
                 filesplit = os.path.splitext(url)
                 thumb2path = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
                 thumb2path = os.path.join(self.conf["lycheepath"], "uploads", "thumb", thumb2path)
+                smallpath = os.path.join(self.conf["lycheepath"], "uploads", "small", url)
+                mediumpath = os.path.join(self.conf["lycheepath"], "uploads", "medium", url)
                 bigpath = os.path.join(self.conf["lycheepath"], "uploads", "big", url)
                 remove_file(thumbpath)
                 remove_file(thumb2path)
+                remove_file(smallpath)
+                remove_file(mediumpath)
                 remove_file(bigpath)
 
     def adjustRotation(self, photo):
@@ -356,6 +432,8 @@ class LycheeSyncer:
             album['path'] = None
             album['relpath'] = None  # path relative to srcdir
             album['photos'] = []  # path relative to srcdir
+            album['parent_id'] = None
+            album['parent_folders'] = None
 
             # if a there is at least one photo in the files
             if any([self.isAPhoto(f) for f in files]):
@@ -380,13 +458,16 @@ class LycheeSyncer:
                 # albumnames start at srcdir (to avoid absolute path albumname)
                 album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
                 album['name'] = self.getAlbumNameFromPath(album)
+                album['parent_folders'] = album['relpath'].split(os.sep)
 
                 if len(album['name']) > album_name_max_width:
                     logger.warn("album name too long, will be truncated " + album['name'])
                     album['name'] = album['name'][0:album_name_max_width]
                     logger.warn("album name is now " + album['name'])
 
+                album['parent_id'] = self.dao.getParentID(album)
                 album['id'] = self.dao.albumExists(album)
+
 
                 if self.conf['replace'] and album['id']:
                     # drop album photos
@@ -425,6 +506,8 @@ class LycheeSyncer:
                                 res = self.copyFileToLychee(photo)
                                 self.adjustRotation(photo)
                                 self.makeThumbnail(photo)
+                                self.makeMedium(photo)
+                                self.makeSmall(photo)
                                 res = self.dao.addFileToAlbum(photo)
                                 # increment counter
                                 if res:

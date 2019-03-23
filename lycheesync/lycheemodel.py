@@ -84,6 +84,8 @@ class LycheePhoto:
     exif = None
     _str_datetime = None
     checksum = ""
+    medium = 0
+    small = 0
 
     def convert_strdate_to_timestamp(self, value):
         # check parameter type
@@ -207,7 +209,10 @@ class LycheePhoto:
                                     if(len(value) == 2):
                                         self.exif.aperture = "{0:.1f}".format(value[0] / value[1])
                                 elif isinstance(value, tuple):
-                                    self.exif.aperture = list(value)[0]
+                                    if(len(value) == 1):
+                                        self.exif.aperture = list(value)[0]
+                                    elif(len(value) == 2):
+                                        self.exif.aperture = "{0:.1f}".format(value[0] / value[1])
                             except Exception:
                                 logger.exception("apperture not readable for %s", self.srcfullpath)
 
@@ -261,7 +266,8 @@ class LycheePhoto:
 
                                 if isinstance(value, list):
                                     if len(value) > 1:
-                                        self.exif.exposure = "{0:.1f}".format(value[0] / value[1])
+                                        #self.exif.exposure = "{0:.1f}".format(value[0] / value[1])
+                                        self.exif.exposure = "1/" + str(value[1])
                                     else:
                                         self.exif.exposure = value[0]
                                         if self.exif.exposure < 1:
@@ -364,7 +370,7 @@ class LycheePhoto:
                         self.exif.focal = ""
 
                     if self.exif.aperture:
-                        self.exif.aperture = 'F/' + str(self.exif.aperture)
+                        self.exif.aperture = 'f/' + str(self.exif.aperture)
                     else:
                         self.exif.aperture = ""
 
@@ -381,7 +387,7 @@ class LycheePhoto:
 
                     self._str_datetime = takedate + " " + taketime
 
-                    self.description = self._str_datetime
+                    # self.description = self._str_datetime
         except IOError as e:
             raise e
         except Exception:
