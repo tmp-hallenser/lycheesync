@@ -33,10 +33,11 @@ class ExifData:
     iso = ""
     make = ""
     model = ""
-    shutter = None
-    aperture = None
-    exposure = None
-    focal = None
+    lens = ""
+    shutter = ""
+    aperture = ""
+    exposure = ""
+    focal = ""
     _takedate = None
     taketime = None
     orientation = 1
@@ -47,6 +48,7 @@ class ExifData:
         res += "aperture: " + str(self.aperture) + "\n"
         res += "make: " + str(self.make) + "\n"
         res += "model: " + str(self.model) + "\n"
+        res += "lens: " + str(self.lens) + "\n"
         res += "shutter: " + str(self.shutter) + "\n"
         res += "exposure: " + str(self.exposure) + "\n"
         res += "focal: " + str(self.focal) + "\n"
@@ -258,6 +260,13 @@ class LycheePhoto:
 
                         if decode == "Model":
                             self.exif.model = value
+                            
+                        if decode == "LensInfo":
+                            self.exif.lens = value
+		                # Lens field from Lightroom
+			            if self.exif.lens == '' and decode == 'UndefinedTag:0xA434':
+			                self.exif.lens = value
+
                         if decode == "ExposureTime":
                             logger.debug("exposuretime: %s", value)
                             try:
@@ -267,7 +276,7 @@ class LycheePhoto:
                                 if isinstance(value, list):
                                     if len(value) > 1:
                                         #self.exif.exposure = "{0:.1f}".format(value[0] / value[1])
-                                        self.exif.exposure = "1/" + str(value[1])
+                                        self.exif.exposure = str(value[0]) + "/" + str(value[1])
                                     else:
                                         self.exif.exposure = value[0]
                                         if self.exif.exposure < 1:

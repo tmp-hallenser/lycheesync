@@ -542,7 +542,7 @@ class LycheeDAO:
                  "size, star, " +
                  "thumbUrl, album_id, " +
                  "iso, aperture, make, " +
-                 "model, shutter, focal, " +
+                 "model, lens, shutter, focal, " +
                  "takestamp, description, title, " +
                  " checksum, medium, small, created_at, updated_at) " +
                  "values " +
@@ -552,7 +552,7 @@ class LycheeDAO:
                  "'{}', {}, " +
                  "'{}', '{}', " +
                  "'{}', '{}', '{}', " +
-                 "'{}', '{}', '{}', " +
+                 "'{}', '{}', '{}', '{}', " +
                  "'{}', '{}', '{}', " +
                  "'{}', '{}', '{}', '{}', '{}')"
                  ).format(photo.id, photo.url, '',
@@ -561,7 +561,7 @@ class LycheeDAO:
                           photo.size, photo.star,
                           photo.thumbUrl, photo.albumid,
                           photo.exif.iso, photo.exif.aperture, photo.exif.make,
-                          photo.exif.model, photo.exif.exposure, photo.exif.focal,
+                          photo.exif.model, photo.exif.lens, photo.exif.exposure, photo.exif.focal,
                           stamp, self.sqlProtect(photo.description), self.sqlProtect(photo.originalname),
                           photo.checksum, photo.medium, photo.small, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         logger.debug(query)
