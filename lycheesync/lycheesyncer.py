@@ -436,107 +436,109 @@ class LycheeSyncer:
             album['parent_folders'] = None
 
             # if a there is at least one photo in the files
-            if any([self.isAPhoto(f) for f in files]):
-                album['path'] = root
+            # if any([self.isAPhoto(f) for f in files]):
+            # -> we need to create all folders for the case of subfolders
+            
+            album['path'] = root
 
-                # Skip any albums that matches one of the exluded patterns
-                if 'excludeAlbums' in self.conf:
-                    if any(
-                            [True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(album['path'], pattern)]):
-                        logger.info("Skipping excluded album {}".format(root))
-                        continue
-
-                # don't know what to do with theses photo
-                # and don't wan't to create a default album
-                if album['path'] == self.conf['srcdir']:
-                    msg = "file at srcdir root won't be added to lychee, please move them in a subfolder: {}".format(
-                        root)
-                    logger.warn(msg)
+            # Skip any albums that matches one of the exluded patterns
+            if 'excludeAlbums' in self.conf:
+                if any(
+                        [True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(album['path'], pattern)]):
+                    logger.info("Skipping excluded album {}".format(root))
                     continue
 
-                # Fill in other album properties
-                # albumnames start at srcdir (to avoid absolute path albumname)
-                album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
-                album['name'] = self.getAlbumNameFromPath(album)
-                album['parent_folders'] = album['relpath'].split(os.sep)
+            # don't know what to do with theses photo
+            # and don't wan't to create a default album
+            if album['path'] == self.conf['srcdir']:
+                msg = "file at srcdir root won't be added to lychee, please move them in a subfolder: {}".format(
+                    root)
+                logger.warn(msg)
+                continue
 
-                if len(album['name']) > album_name_max_width:
-                    logger.warn("album name too long, will be truncated " + album['name'])
-                    album['name'] = album['name'][0:album_name_max_width]
-                    logger.warn("album name is now " + album['name'])
+            # Fill in other album properties
+            # albumnames start at srcdir (to avoid absolute path albumname)
+            album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
+            album['name'] = self.getAlbumNameFromPath(album)
+            album['parent_folders'] = album['relpath'].split(os.sep)
 
-                album['parent_id'] = self.dao.getParentID(album)
-                album['id'] = self.dao.albumExists(album)
+            if len(album['name']) > album_name_max_width:
+                logger.warn("album name too long, will be truncated " + album['name'])
+                album['name'] = album['name'][0:album_name_max_width]
+                logger.warn("album name is now " + album['name'])
+
+            album['parent_id'] = self.dao.getParentID(album)
+            album['id'] = self.dao.albumExists(album)
 
 
-                if self.conf['replace'] and album['id']:
-                    # drop album photos
-                    filelist = self.dao.eraseAlbum(album['id'])
-                    self.deleteFiles(filelist)
-                    assert self.dao.dropAlbum(album['id'])
-                    # Album should be recreated
-                    album['id'] = False
+            if self.conf['replace'] and album['id']:
+                # drop album photos
+                filelist = self.dao.eraseAlbum(album['id'])
+                self.deleteFiles(filelist)
+                assert self.dao.dropAlbum(album['id'])
+                # Album should be recreated
+                album['id'] = False
+
+            if not(album['id']):
+                # create album
+                album['id'] = self.createAlbum(album)
 
                 if not(album['id']):
-                    # create album
-                    album['id'] = self.createAlbum(album)
+                    logger.error("didn't manage to create album for: " + album['relpath'])
+                    continue
+                else:
+                    logger.info("##### Album created: %s", album['name'])
 
-                    if not(album['id']):
-                        logger.error("didn't manage to create album for: " + album['relpath'])
-                        continue
-                    else:
-                        logger.info("##### Album created: %s", album['name'])
+                createdalbums += 1
 
-                    createdalbums += 1
+            # Albums are created or emptied, now take care of photos
+            for f in sorted(files):
 
-                # Albums are created or emptied, now take care of photos
-                for f in sorted(files):
+                if self.isAPhoto(f):
+                    try:
+                        discoveredphotos += 1
+                        error = False
+                        logger.info("**** Adding %s to lychee album: %s",
+                                    os.path.join(root, f),
+                                    album['name'])
+                        # corruption detected here by launching exception
+                        pid = self.dao.getUniqPhotoId()
+                        photo = LycheePhoto(pid, self.conf, f, album)
+                        if not(self.dao.photoExists(photo)):
+                            res = self.copyFileToLychee(photo)
+                            self.adjustRotation(photo)
+                            self.makeThumbnail(photo)
+                            self.makeMedium(photo)
+                            self.makeSmall(photo)
+                            res = self.dao.addFileToAlbum(photo)
+                            # increment counter
+                            if res:
+                                importedphotos += 1
+                                album['photos'].append(photo)
+                            else:
+                                error = True
+                                logger.error(
+                                    "while adding to album: %s photo: %s",
+                                    album['name'],
+                                    photo.srcfullpath)
+                        else:
+                            logger.error(
+                                "photo already exists in this album with same name or same checksum: %s it won't be added to lychee",
+                                photo.srcfullpath)
+                            error = True
+                    except Exception as e:
 
-                    if self.isAPhoto(f):
-                        try:
-                            discoveredphotos += 1
-                            error = False
-                            logger.info("**** Adding %s to lychee album: %s",
+                        logger.exception(e)
+                        logger.error("could not add %s to album %s", f, album['name'])
+                        error = True
+                    finally:
+                        if not(error):
+                            logger.info("**** Successfully added %s to lychee album: %s",
                                         os.path.join(root, f),
                                         album['name'])
-                            # corruption detected here by launching exception
-                            pid = self.dao.getUniqPhotoId()
-                            photo = LycheePhoto(pid, self.conf, f, album)
-                            if not(self.dao.photoExists(photo)):
-                                res = self.copyFileToLychee(photo)
-                                self.adjustRotation(photo)
-                                self.makeThumbnail(photo)
-                                self.makeMedium(photo)
-                                self.makeSmall(photo)
-                                res = self.dao.addFileToAlbum(photo)
-                                # increment counter
-                                if res:
-                                    importedphotos += 1
-                                    album['photos'].append(photo)
-                                else:
-                                    error = True
-                                    logger.error(
-                                        "while adding to album: %s photo: %s",
-                                        album['name'],
-                                        photo.srcfullpath)
-                            else:
-                                logger.error(
-                                    "photo already exists in this album with same name or same checksum: %s it won't be added to lychee",
-                                    photo.srcfullpath)
-                                error = True
-                        except Exception as e:
 
-                            logger.exception(e)
-                            logger.error("could not add %s to album %s", f, album['name'])
-                            error = True
-                        finally:
-                            if not(error):
-                                logger.info("**** Successfully added %s to lychee album: %s",
-                                            os.path.join(root, f),
-                                            album['name'])
-
-                a = album.copy()
-                albums.append(a)
+            a = album.copy()
+            albums.append(a)
 
         self.updateAlbumsDate(albums)
         if self.conf['sort']:
