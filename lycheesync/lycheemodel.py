@@ -263,8 +263,9 @@ class LycheePhoto:
 
                         if decode == "LensInfo":
                             self.exif.lens = value
+
 		                # Lens field from Lightroom
-			            if self.exif.lens == '' and decode == 'UndefinedTag:0xA434':
+                        if self.exif.lens == '' and decode == 'UndefinedTag:0xA434':
                             self.exif.lens = value
 
                         if decode == "ExposureTime":
