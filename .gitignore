@@ -45,3 +45,4 @@ myconf.json
 testconf.json
 profile.py
 .cache
+.DS_Store

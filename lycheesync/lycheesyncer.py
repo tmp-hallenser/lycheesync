@@ -442,10 +442,11 @@ class LycheeSyncer:
 
             # Fill in other album properties
             # albumnames start at srcdir (to avoid absolute path albumname)
+            album['path'] = root
             album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
             album['name'] = self.getAlbumNameFromPath(album)
             album['parent_folders'] = album['relpath'].split(os.sep)
-            album['path'] = root
+
 
             # Skip any albums that matches one of the exluded patterns
             if 'excludeAlbums' in self.conf:
