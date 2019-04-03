@@ -438,13 +438,13 @@ class LycheeSyncer:
             # if a there is at least one photo in the files
             # if any([self.isAPhoto(f) for f in files]):
             # -> we need to create all folders for the case of subfolders
-            
+
             album['path'] = root
 
             # Skip any albums that matches one of the exluded patterns
             if 'excludeAlbums' in self.conf:
                 if any(
-                        [True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(album['path'], pattern)]):
+                        [True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(album['name'], pattern)]):
                     logger.info("Skipping excluded album {}".format(root))
                     continue
 
