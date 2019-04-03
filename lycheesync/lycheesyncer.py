@@ -439,6 +439,12 @@ class LycheeSyncer:
             # if any([self.isAPhoto(f) for f in files]):
             # -> we need to create all folders for the case of subfolders
 
+
+            # Fill in other album properties
+            # albumnames start at srcdir (to avoid absolute path albumname)
+            album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
+            album['name'] = self.getAlbumNameFromPath(album)
+            album['parent_folders'] = album['relpath'].split(os.sep)
             album['path'] = root
 
             # Skip any albums that matches one of the exluded patterns
@@ -456,11 +462,7 @@ class LycheeSyncer:
                 logger.warn(msg)
                 continue
 
-            # Fill in other album properties
-            # albumnames start at srcdir (to avoid absolute path albumname)
-            album['relpath'] = os.path.relpath(album['path'], self.conf['srcdir'])
-            album['name'] = self.getAlbumNameFromPath(album)
-            album['parent_folders'] = album['relpath'].split(os.sep)
+
 
             if len(album['name']) > album_name_max_width:
                 logger.warn("album name too long, will be truncated " + album['name'])
