@@ -455,7 +455,7 @@ class LycheeSyncer:
                 for parent_folder in album['parent_folders']:
                     if any([True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(parent_folder, pattern)]):
                         excluded = True
-                if excluded == True
+                if excluded == True:
                     logger.info("Skipping excluded album {}".format(root))
                     continue
 
