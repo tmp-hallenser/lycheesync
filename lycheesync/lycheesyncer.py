@@ -449,9 +449,13 @@ class LycheeSyncer:
 
 
             # Skip any albums that matches one of the exluded patterns
+
             if 'excludeAlbums' in self.conf:
-                if any(
-                        [True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(album['name'], pattern)]):
+                excluded = False
+                for parent_folder in album['parent_folders']:
+                    if any([True for pattern in self.conf['excludeAlbums'] if fnmatch.fnmatch(parent_folder, pattern)]):
+                        excluded = True
+                if excluded == True
                     logger.info("Skipping excluded album {}".format(root))
                     continue
 
