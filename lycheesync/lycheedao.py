@@ -270,7 +270,7 @@ class LycheeDAO:
         Parameters: an album properties list. At least the name & parent names should be specified
         Returns None or the albumid if it exists
         """
-        logger.debug("Searching for: " + str(album['name']) + ", " + str(album['parent_id']))
+        logger.info("Searching for: " + str(album['name']) + ", " + str(album['parent_id']))
         album_id = None
         try:
             cur = self.db.cursor()
@@ -286,6 +286,7 @@ class LycheeDAO:
         except Exception as e:
             logger.exception(e)
 
+        logger.info("Found album_id: " + str(album_id))
         return album_id
 
     def getAlbumNameFromIdsList(self, list_id):
