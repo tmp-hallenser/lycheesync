@@ -398,14 +398,14 @@ class LycheeDAO:
 
             self.db.commit()
 
-            if album['parent_id'] != 0:
-                cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id=%s)", (album['name'], str(album['parent_id'])))
-            else:
-                cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id is NULL)", (album['name']))
+            #if album['parent_id'] != 0:
+            #    cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id=%s)", (album['name'], str(album['parent_id'])))
+            #else:
+            #    cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id is NULL)", (album['name']))
 
-            row = cur.fetchone()
-            self.albumslist['name'] = (row['id'], row['parent_id'])
-            album['id'] = row['id']
+            #row = cur.fetchone()
+            self.albumslist[album['name']] = (album['id'], album['parent_id'])
+            # album['id'] = row['id']
 
         except Exception as e:
             logger.exception(e)
