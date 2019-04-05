@@ -494,7 +494,7 @@ class LycheeSyncer:
                     logger.error("didn't manage to create album for: " + album['relpath'])
                     continue
                 else:
-                    logger.info("##### Album created: %s", album['name'])
+                    logger.info("##### Album created: %s, album_id: %s", album['name'], str(album['id']))
 
                 createdalbums += 1
 
@@ -505,9 +505,9 @@ class LycheeSyncer:
                     try:
                         discoveredphotos += 1
                         error = False
-                        logger.info("**** Adding %s to lychee album: %s",
+                        logger.info("**** Adding %s to lychee album: %s, album_id: %s",
                                     os.path.join(root, f),
-                                    album['name'])
+                                    album['name'], str(album['id']))
                         # corruption detected here by launching exception
                         pid = self.dao.getUniqPhotoId()
                         photo = LycheePhoto(pid, self.conf, f, album)
