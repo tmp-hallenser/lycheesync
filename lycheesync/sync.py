@@ -80,16 +80,16 @@ def main(verbose, exclusive_mode, sort_album_by_name, sanitycheck, link, updated
     # read permission of the lycheepath directory to apply it to the uploade photos
     img_path = os.path.join(conf_data["lycheepath"], "uploads", "big")
     stat_info = os.stat(img_path)
-    uid = stat_info.st_uid
-    gid = stat_info.st_gid
+#    uid = stat_info.st_uid
+#    gid = stat_info.st_gid
 
-    user = pwd.getpwuid(uid)[0]
-    group = grp.getgrgid(gid)[0]
+#    user = pwd.getpwuid(uid)[0]
+#    group = grp.getgrgid(gid)[0]
 
-    conf_data["user"] = user
-    conf_data["group"] = group
-    conf_data["uid"] = uid
-    conf_data["gid"] = gid
+#    conf_data["user"] = user
+#    conf_data["group"] = group
+#    conf_data["uid"] = uid
+#    conf_data["gid"] = gid
 
     script_init(conf_data)
 
