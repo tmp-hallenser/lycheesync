@@ -14,6 +14,7 @@ import sys
 import logging
 import piexif
 import fnmatch
+import ffmpeg
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,16 @@ class LycheeSyncer:
             album['name'] = alb_path_utf8
         return album['name']
 
+    def isAPhotoOrVideo(self, file):
+        """
+        Determine if the filename passed is a photo or video or not based on the file extension
+        Takes a string  as input (a file name)
+        Returns a boolean
+        """
+        if ((self.isAPhoto(file) == True) or (self.isAVideo(file)==True)):
+            return True
+        return False
+
     def isAPhoto(self, file):
         """
         Determine if the filename passed is a photo or not based on the file extension
@@ -70,6 +81,16 @@ class LycheeSyncer:
         Returns a boolean
         """
         validimgext = ['.jpg', '.jpeg', '.gif', '.png']
+        ext = os.path.splitext(file)[-1].lower()
+        return (ext in validimgext)
+
+    def isAVideo(self, file):
+        """
+        Determine if the filename passed is a video or not based on the file extension
+        Takes a string  as input (a file name)
+        Returns a boolean
+        """
+        validimgext = ['.mp4', '.webm', '.mov']
         ext = os.path.splitext(file)[-1].lower()
         return (ext in validimgext)
 
@@ -93,7 +114,7 @@ class LycheeSyncer:
 
     def thumbIt(self, res, photo, destinationpath, destfile):
         """
-        Create the thumbnail of a given photo
+        Create the thumbnail of a given photo or video
         Parameters:
         - res: should be a set of h and v res (640, 480)
         - photo: a valid LycheePhoto object
@@ -116,16 +137,33 @@ class LycheeSyncer:
             lower = int(photo.width + upper)
 
         destimage = os.path.join(destinationpath, destfile)
-        try:
-            img = Image.open(photo.destfullpath)
-        except Exception as e:
-            logger.exception(e)
-            logger.error("ioerror (corrupted file?): " + photo.srcfullpath)
-            raise
 
-        img = img.crop((left, upper, right, lower))
-        img.thumbnail(res, Image.ANTIALIAS)
-        img.save(destimage, quality=99)
+        if photo.isPhoto:
+            try:
+                img = Image.open(photo.destfullpath)
+            except Exception as e:
+                logger.exception(e)
+                logger.error("ioerror (corrupted file?): " + photo.srcfullpath)
+                raise
+
+            img = img.crop((left, upper, right, lower))
+            img.thumbnail(res, Image.ANTIALIAS)
+            img.save(destimage, quality=99)
+
+        if photo.isVideo:
+            try:
+                (
+                    ffmpeg
+                    .input(photo.destfullpath, ss=0.1)
+                    .crop(left, upper, right-left, lower-upper)
+                    .filter('scale', res[0], res[1])
+                    .output(destimage, vframes=1)
+                    .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
+                )
+            except ffmpeg.Error as e:
+                print(e.stderr.decode(), file=sys.stderr)
+                sys.exit(1)
         return destimage
 
     def scale(self, res, photo, destinationpath):
@@ -137,18 +175,33 @@ class LycheeSyncer:
         - destinationpath: a string the destination full path of the thumbnail (without filename)
         """
 
+        if photo.isPhoto:
+            destimage = os.path.join(destinationpath, photo.url)
+            try:
+                img = Image.open(photo.destfullpath)
+            except Exception as e:
+                logger.exception(e)
+                logger.error("ioerror (corrupted file?): " + photo.srcfullpath)
+                raise
 
-        destimage = os.path.join(destinationpath, photo.url)
-        try:
-            img = Image.open(photo.destfullpath)
-        except Exception as e:
-            logger.exception(e)
-            logger.error("ioerror (corrupted file?): " + photo.srcfullpath)
-            raise
+            img.thumbnail(res, Image.ANTIALIAS)
+            img.save(destimage, quality=99)
 
-        img.thumbnail(res, Image.ANTIALIAS)
-        img.save(destimage, quality=99)
-
+        if photo.isVideo:
+            filesplit = os.path.splitext(photo.url)
+            destimage = os.path.join(destinationpath, ''.join([filesplit[0], ".jpg"]).lower())
+            try:
+                (
+                    ffmpeg
+                    .input(photo.destfullpath, ss=0.1)
+                    .filter('scale', res[0], res[1])
+                    .output(destimage, vframes=1)
+                    .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
+                )
+            except ffmpeg.Error as e:
+                print(e.stderr.decode(), file=sys.stderr)
+                sys.exit(1)
 
     def makeSmall(self, photo):
         """
@@ -164,8 +217,8 @@ class LycheeSyncer:
             width = (photo.width / photo.height) * height
 
             if (width > 640):
-                width = 640
-                height = (photo.height / photo.width) * width
+                    width = 640
+                    height = (photo.height / photo.width) * width
 
             # compute destination path
             destpath = os.path.join(self.conf["lycheepath"], "uploads", "small")
@@ -209,9 +262,16 @@ class LycheeSyncer:
         """
         # set  thumbnail size
         sizes = [(200, 200), (400, 400)]
-        # insert @2x in big thumbnail file name
-        filesplit = os.path.splitext(photo.url)
-        destfiles = [photo.url, ''.join([filesplit[0], "@2x", filesplit[1]]).lower()]
+
+        if photo.isPhoto:
+            # insert @2x in big thumbnail file name
+            filesplit = os.path.splitext(photo.url)
+            destfiles = [photo.url, ''.join([filesplit[0], "@2x", filesplit[1]]).lower()]
+        if photo.isVideo:
+            # insert @2x in big thumbnail file name
+            filesplit = os.path.splitext(photo.url)
+            destfiles = [''.join([filesplit[0], ".jpg"]).lower(), ''.join([filesplit[0], "@2x.jpg"]).lower()]
+
         # compute destination path
         destpath = os.path.join(self.conf["lycheepath"], "uploads", "thumb")
         # make thumbnails
@@ -267,7 +327,7 @@ class LycheeSyncer:
         """
 
         for url in filelist:
-            if self.isAPhoto(url):
+            if self.isAPhotoOrVideo(url) :
                 thumbpath = os.path.join(self.conf["lycheepath"], "uploads", "thumb", url)
                 filesplit = os.path.splitext(url)
                 thumb2path = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
@@ -501,7 +561,7 @@ class LycheeSyncer:
             # Albums are created or emptied, now take care of photos
             for f in sorted(files):
 
-                if self.isAPhoto(f):
+                if self.isAPhotoOrVideo(f):
                     try:
                         discoveredphotos += 1
                         error = False
@@ -513,10 +573,15 @@ class LycheeSyncer:
                         photo = LycheePhoto(pid, self.conf, f, album)
                         if not(self.dao.photoExists(photo)):
                             res = self.copyFileToLychee(photo)
-                            self.adjustRotation(photo)
+                            if (self.isAPhoto(f)):
+                                self.adjustRotation(photo)
+
                             self.makeThumbnail(photo)
-                            self.makeMedium(photo)
+
+                            if (self.isAPhoto(f)):
+                                self.makeMedium(photo)
                             self.makeSmall(photo)
+
                             res = self.dao.addFileToAlbum(photo)
                             # increment counter
                             if res:

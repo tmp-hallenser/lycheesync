@@ -79,7 +79,7 @@ def main(verbose, exclusive_mode, sort_album_by_name, sanitycheck, link, updated
 
     # read permission of the lycheepath directory to apply it to the uploade photos
     img_path = os.path.join(conf_data["lycheepath"], "uploads", "big")
-    stat_info = os.stat(img_path)
+#    stat_info = os.stat(img_path)
 #    uid = stat_info.st_uid
 #    gid = stat_info.st_gid
 
