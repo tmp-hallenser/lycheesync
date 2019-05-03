@@ -87,8 +87,8 @@ class LycheePhoto:
     exif = None
     _str_datetime = None
     checksum = ""
-    medium = 0
-    small = 0
+    medium = ""
+    small = ""
     isPhoto = False
     isVideo = False
 

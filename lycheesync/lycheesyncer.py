@@ -214,17 +214,17 @@ class LycheeSyncer:
         if (photo.height > 360):
             # set height
             height = 360
-            width = (photo.width / photo.height) * height
+            width = int(round((photo.width / photo.height) * height ))
 
             if (width > 640):
                     width = 640
-                    height = (photo.height / photo.width) * width
+                    height = int(round((photo.height / photo.width) * width ))
 
             # compute destination path
             destpath = os.path.join(self.conf["lycheepath"], "uploads", "small")
 
             # make small version of image
-            photo.small = 1
+            photo.small = str(width) + "x" + str(height)
             self.scale((width, height), photo, destpath)
 
     def makeMedium(self, photo):
@@ -238,17 +238,17 @@ class LycheeSyncer:
         if (photo.height > 1080):
             # set height
             height = 1080
-            width = (photo.width / photo.height) * height
+            width = int(round((photo.width / photo.height) * height ))
 
             if (width > 1920):
                 width = 1920
-                height = (photo.height / photo.width) * width
+                height = int(round((photo.height / photo.width) * width ))
 
             # compute destination path
             destpath = os.path.join(self.conf["lycheepath"], "uploads", "medium")
 
             # make small version of image
-            photo.medium = 1
+            photo.medium = str(width) + "x" + str(height)
             self.scale((width, height), photo, destpath)
 
 
