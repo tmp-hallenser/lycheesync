@@ -7,3 +7,4 @@ pytest-cov
 pytest-pep8
 piexif
 ffmpeg-python
+IPTCInfo3
