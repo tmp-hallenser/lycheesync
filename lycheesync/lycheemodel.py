@@ -466,7 +466,7 @@ class LycheePhoto:
                 if (IPTC_data['Headline'] != None):
                     self.exif.title = IPTC_data['Headline'].decode('UTF-8')
                 else:
-                    if(IPTC_data['Object Name'] != ''):
+                    if(IPTC_data['Object Name'] != None):
                         self.exif.title = IPTC_data['Object Name'].decode('UTF-8')
 
                 if (IPTC_data['Caption/Abstract'] != None):
