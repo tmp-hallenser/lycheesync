@@ -468,6 +468,8 @@ class LycheePhoto:
                 else:
                     if(IPTC_data['Object Name'] != None):
                         self.exif.title = IPTC_data['Object Name'].decode('UTF-8')
+                    else:
+                        self.exif.title = self.originalname
 
                 if (IPTC_data['Caption/Abstract'] != None):
                     self.exif.description = IPTC_data['Caption/Abstract'].decode('UTF-8')
@@ -486,6 +488,8 @@ class LycheePhoto:
                     self.srcfullpath)
 
         if self.isVideo:
+
+            self.exif.title = self.originalname
 
             probe = ffmpeg.probe(self.srcfullpath)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
