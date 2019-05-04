@@ -560,14 +560,14 @@ class LycheeDAO:
                  "'{}', '{}', '{}', '{}', " +
                  "'{}', '{}', '{}', " +
                  "'{}', '{}', '{}', '{}', '{}')"
-                 ).format(photo.id, photo.url, '',
+                 ).format(photo.id, photo.url, photo.exif.tags,
                           self.conf["publicAlbum"], photo.type,
                           photo.width, photo.height,
                           photo.size, photo.star,
                           photo.thumbUrl, photo.albumid,
                           photo.exif.iso, photo.exif.aperture, photo.exif.make,
                           photo.exif.model, photo.exif.lens, photo.exif.exposure, photo.exif.focal,
-                          stamp, self.sqlProtect(photo.description), self.sqlProtect(photo.originalname),
+                          stamp, photo.exif.description, photo.exif.title,
                           photo.checksum, photo.medium, photo.small, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         logger.debug(query)
         try:

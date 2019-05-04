@@ -8,6 +8,7 @@ import os
 import mimetypes
 from PIL import Image
 from PIL.ExifTags import TAGS
+from iptcinfo3 import IPTCInfo
 import datetime
 import logging
 from dateutil.parser import parse
@@ -43,6 +44,11 @@ class ExifData:
     taketime = None
     orientation = 1
 
+    # IPTC Metadata
+    title = ""
+    description = ""
+    tags = ""
+
     def __str__(self):
         res = ""
         res += "iso: " + str(self.iso) + "\n"
@@ -56,6 +62,10 @@ class ExifData:
         res += "takedate: " + str(self.takedate) + "\n"
         res += "taketime: " + str(self.taketime) + "\n"
         res += "orientation: " + str(self.orientation) + "\n"
+        res += "title: " + str(self.title) + "\n"
+        res += "description: " + str(self.description) + "\n"
+        res += "tags: " + str(self.tags) + "\n"
+
         return res
 
 
@@ -202,9 +212,9 @@ class LycheePhoto:
         self.size = os.path.getsize(self.srcfullpath)
         size_kb = int(self.size / 1024)
         if (size_kb > 1024):
-            self.size = "{:.2f}".format(size_kb / 1024) + " Mo"
+            self.size = "{:.2f}".format(size_kb / 1024) + " MB"
         else:
-            self.size = str(size_kb) + " Ko"
+            self.size = str(size_kb) + " KB"
 
         # Default date
         takedate = datetime.date.today().isoformat()
@@ -295,11 +305,17 @@ class LycheePhoto:
                             if decode == "Model":
                                 self.exif.model = value
 
-                            if decode == "LensInfo":
+                            if decode == "LensModel" and value != "":
                                 self.exif.lens = value
 
     		                # Lens field from Lightroom
                             if self.exif.lens == '' and decode == 'UndefinedTag:0xA434':
+                                self.exif.lens = value
+
+                            if self.exif.lens == '' and decode == 'LensType':
+                                self.exif.lens = value
+
+                            if self.exif.lens == '' and decode == 'LensModel':
                                 self.exif.lens = value
 
                             if decode == "ExposureTime":
@@ -432,11 +448,41 @@ class LycheePhoto:
                         self._str_datetime = takedate + " " + taketime
 
                         # self.description = self._str_datetime
+
+
+
             except IOError as e:
                 raise e
             except Exception:
                 logging.warn(
                     "some exif data won't be available for %s, report a bug with complete stack trace on github please ",
+                    self.srcfullpath)
+
+            # Read IPTC meta data
+            try:
+
+                IPTC_data  = IPTCInfo(self.srcfullpath)
+
+                if (IPTC_data['Headline'] != None):
+                    self.exif.title = IPTC_data['Headline'].decode('UTF-8')
+                else:
+                    if(IPTC_data['Object Name'] != ''):
+                        self.exif.title = IPTC_data['Object Name'].decode('UTF-8')
+
+                if (IPTC_data['Caption/Abstract'] != None):
+                    self.exif.description = IPTC_data['Caption/Abstract'].decode('UTF-8')
+
+                if (IPTC_data['Keywords'] != None):
+                    tags = IPTC_data['Keywords']
+                    for i in range(len(tags)):
+                        tags[i] = tags[i].decode('UTF-8')
+                    self.exif.tags = ", ".join(tags)
+
+            except IOError as e:
+                raise e
+            except Exception:
+                logging.warn(
+                    "some IPTC data won't be available for %s, report a bug with complete stack trace on github please ",
                     self.srcfullpath)
 
         if self.isVideo:
