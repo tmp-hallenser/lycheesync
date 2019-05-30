@@ -512,8 +512,14 @@ class LycheePhoto:
                 if "creation_time" in tags:
                     split_timestamp = tags["creation_time"].split("T")
                     self.exif.takedate = split_timestamp[0]
-                    self.exif.taketime = split_timestamp[1]
-
+                    
+                    # Time can have the following formats
+                    # 1. HH:MM:SS
+                    # 2. HH:MM:SS+HHMM
+                    # 3. HH:MM:SS-HHMM
+                    tmp_var1 = split_timestamp[1].split("+")
+                    tmp_var2 = tmp_var1[0].split("-")
+                    self.exif.taketime = tmp_var2[0] 
 
     def __str__(self):
         res = ""
