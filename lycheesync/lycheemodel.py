@@ -15,6 +15,9 @@ from dateutil.parser import parse
 from fractions import Fraction
 import ffmpeg
 
+from geopy.geocoders import Nominatim #decode GPS position
+from iso3166 import countries # translation country code to country
+
 logger = logging.getLogger(__name__)
 
 
@@ -629,6 +632,69 @@ class LycheePhoto:
                     tmp_var1 = split_timestamp[1].split("+")
                     tmp_var2 = tmp_var1[0].split("-")
                     self.exif.taketime = tmp_var2[0]
+
+
+        # Get City, State and country for a given GPS location and
+        # adds it to the tags
+
+        # Location is set
+        if ((self.exif.longitude != None) and (self.exif.latitude != None)):
+
+            geolocator = Nominatim(user_agent="lychee sync")
+            print(self.exif.latitude)
+            print(self.exif.longitude)
+            location = geolocator.reverse(str(self.exif.latitude) + ", " + str(self.exif.longitude))
+            print(location.raw)
+            address = location.raw['address']
+            for key, value in address.items():
+                if((key=="island") or \
+                    (key=="region") or \
+                    (key=="state") or \
+                    (key=="province") or \
+                    (key=="state_code") or \
+                    (key=="state_district") or \
+                    (key=="county") or \
+                    (key=="local_administrative_area") or \
+                    (key=="county_code") or \
+                    (key=="city") or \
+                    (key=="town") or \
+                    (key=="municipality") or \
+                    (key=="neighbourhood") or \
+                    (key=="suburb") or \
+                    (key=="city_district") or \
+                    (key=="district") or \
+                    (key=="quarter") or \
+                    (key=="houses") or \
+                    (key=="subdivision") or \
+                    (key=="village") or \
+                    (key=="hamlet") or \
+                    (key=="locality") or \
+                    (key=="croft") or \
+                    (key=="road") or \
+                    (key=="footway") or \
+                    (key=="street") or \
+                    (key=="street_name") or \
+                    (key=="residential") or \
+                    (key=="path") or \
+                    (key=="pedestrian") or \
+                    (key=="road_reference") or \
+                    (key=="road_reference_intl") or \
+                    (key=="house") or \
+                    (key=="building") or \
+                    (key=="public_building") or \
+                    (key=="beach") or \
+                    (key=="airport") or \
+                    (key=="aeroway") or \
+                    (key=="aerodrome")
+                   ):
+                    if not (value in self.exif.tags.split(", ")):
+                        if(self.exif.tags==""):
+                            self.exif.tags = value
+                        else:
+                            self.exif.tags = ", ".join((self.exif.tags, value))
+                if(key=="country_code"):
+                    country = countries.get(value)[0]
+                    self.exif.tags = ", ".join((self.exif.tags, country))
 
     def __str__(self):
         res = ""
