@@ -7,7 +7,7 @@ import hashlib
 import os
 import mimetypes
 from PIL import Image
-from PIL.ExifTags import TAGS
+from PIL.ExifTags import TAGS, GPSTAGS
 from iptcinfo3 import IPTCInfo
 import datetime
 import logging
@@ -40,6 +40,16 @@ class ExifData:
     aperture = ""
     exposure = ""
     focal = ""
+    longitude = None
+    _longitude = ""
+    _longitude_ref = ""
+    latitude = None
+    _latitude = ""
+    _latitude_ref = ""
+    altitude = None
+    _altitude = ""
+    _altitude_ref = ""
+    imgDirection = None
     _takedate = None
     taketime = None
     orientation = 1
@@ -59,6 +69,10 @@ class ExifData:
         res += "shutter: " + str(self.shutter) + "\n"
         res += "exposure: " + str(self.exposure) + "\n"
         res += "focal: " + str(self.focal) + "\n"
+        res += "longitude: " + str(self.longitude) + "\n"
+        res += "latitude: " + str(self.latitude) + "\n"
+        res += "altitude: " + str(self.altitude) + "\n"
+        res += "imgDirection: " + str(self.imgDirection) + "\n"
         res += "takedate: " + str(self.takedate) + "\n"
         res += "taketime: " + str(self.taketime) + "\n"
         res += "orientation: " + str(self.orientation) + "\n"
@@ -99,6 +113,7 @@ class LycheePhoto:
     checksum = ""
     medium = ""
     small = ""
+    thumb2x = 1
     isPhoto = False
     isVideo = False
 
@@ -166,6 +181,22 @@ class LycheePhoto:
         ext = os.path.splitext(file)[-1].lower()
         return (ext in validimgext)
 
+    def formattedToFloatGPS(self, rational):
+        """
+        Converts a GPS coordinate (longitude, latitude, altitude) to a float
+        """
+
+        if (len(rational) <= 0.0):
+            return float(0)
+
+        if (len(rational) == 1):
+            return float(rational[0])
+
+        if(rational[1] == 0):
+            return float(0)
+
+        return float(rational[0]) / float(rational[1])
+
     def __init__(self, id, conf, photoname, album):
         # Parameters storage
         self.conf = conf
@@ -207,6 +238,8 @@ class LycheePhoto:
 
         # thumbnails already in place (see makeThumbnail)
 
+    def readExifData(self):
+
         # Auto file some properties
         self.type = mimetypes.guess_type(self.originalname, False)[0]
         self.size = os.path.getsize(self.srcfullpath)
@@ -216,10 +249,13 @@ class LycheePhoto:
         else:
             self.size = str(size_kb) + " KB"
 
+
+
         # Default date
         takedate = datetime.date.today().isoformat()
         taketime = datetime.datetime.now().strftime('%H:%M:%S')
         self._str_datetime = takedate + " " + taketime
+
 
         # Exif Data Parsing
         self.exif = ExifData()
@@ -289,6 +325,79 @@ class LycheePhoto:
                                         logger.warn("focal not readable for %s", self.srcfullpath)
                                 except Exception:
                                     logger.exception("focal not readable for %s", self.srcfullpath)
+
+                            if decode == "GPSInfo":
+                                try:
+                                    for sub_tag in value:
+                                        sub_decoded = GPSTAGS.get(sub_tag, sub_tag)
+                                        sub_value = value[sub_tag]
+                                        if (sub_decoded == "GPSLongitude"):
+
+                                            d = self.formattedToFloatGPS(sub_value[0])
+                                            m = self.formattedToFloatGPS(sub_value[1])
+                                            s = self.formattedToFloatGPS(sub_value[2])
+
+                                            self.exif._longitude = round(d + (m / 60.0) + (s / 3600.0), 8)
+
+                                            if (self.exif._longitude_ref == "E"):
+                                                self.exif.longitude = self.exif._longitude
+                                            if (self.exif._longitude_ref == "W"):
+                                                self.exif.longitude = 0.0 - self.exif._longitude
+
+                                        if (sub_decoded == "GPSLongitudeRef"):
+                                            self.exif._longitude_ref = sub_value
+
+                                            if(self.exif._longitude != ""):
+                                                if (self.exif._longitude_ref == "E"):
+                                                    self.exif.longitude = self.exif._longitude
+                                                if (self.exif._longitude_ref == "W"):
+                                                    self.exif.longitude = 0.0 - self.exif._longitude
+
+                                        if (sub_decoded == "GPSLatitude"):
+
+                                            d = self.formattedToFloatGPS(sub_value[0])
+                                            m = self.formattedToFloatGPS(sub_value[1])
+                                            s = self.formattedToFloatGPS(sub_value[2])
+
+                                            self.exif._latitude = round(d + (m / 60.0) + (s / 3600.0), 8)
+
+                                            if (self.exif._latitude_ref == "N"):
+                                                self.exif.latitude = self.exif._latitude
+                                            if (self.exif._latitude_ref == "S"):
+                                                self.exif.latitude = 0.0 - self.exif._latitude
+
+                                        if (sub_decoded == "GPSLatitudeRef"):
+                                            self.exif._latitude_ref = sub_value
+
+                                            if(self.exif._latitude != ""):
+                                                if (self.exif._latitude_ref == "N"):
+                                                    self.exif.latitude = self.exif._latitude
+                                                if (self.exif._latitude_ref == "S"):
+                                                    self.exif.latitude = 0.0 - self.exif._latitude
+
+                                        if (sub_decoded == "GPSAltitude"):
+                                            self.exif._altitude = round(self.formattedToFloatGPS(sub_value), 4)
+
+                                            if(self.exif._altitude_ref == 0):
+                                                self.exif.altitude = self.exif._altitude
+                                            if(self.exif._altitude_ref == 1):
+                                                self.exif.altitude = 0.0 - self.exif._altitude
+
+                                        if (sub_decoded == "GPSAltitudeRef"):
+                                            # Value is encoded as Byte (0 = Above Sea Level, 1 = Below Sea Level)
+                                            self.exif._altitude_ref = int.from_bytes(sub_value,byteorder='big')
+
+                                            if (self.exif._altitude != ""):
+                                                if(self.exif._altitude_ref == 0):
+                                                    self.exif.altitude = self.exif._altitude
+                                                if(self.exif._altitude_ref == 1):
+                                                    self.exif.altitude = 0.0 - self.exif._altitude
+
+                                        if (sub_decoded == "GPSImgDirection"):
+                                            self.exif.imgDirection = round(self.formattedToFloatGPS(sub_value), 4)
+
+                                except Exception:
+                                    logger.exception("GPSInfo not readable for %s", self.srcfullpath)
 
                             if decode == "ISOSpeedRatings":
 
@@ -469,7 +578,7 @@ class LycheePhoto:
                     if(IPTC_data['Object Name'] != None):
                         self.exif.title = IPTC_data['Object Name'].decode('UTF-8')
                     else:
-                        self.exif.title = self.originalname
+                        self.exif.title = os.path.splitext(self.originalname)[0]
 
                 if (IPTC_data['Caption/Abstract'] != None):
                     self.exif.description = IPTC_data['Caption/Abstract'].decode('UTF-8')
@@ -512,14 +621,14 @@ class LycheePhoto:
                 if "creation_time" in tags:
                     split_timestamp = tags["creation_time"].split("T")
                     self.exif.takedate = split_timestamp[0]
-                    
+
                     # Time can have the following formats
                     # 1. HH:MM:SS
                     # 2. HH:MM:SS+HHMM
                     # 3. HH:MM:SS-HHMM
                     tmp_var1 = split_timestamp[1].split("+")
                     tmp_var2 = tmp_var1[0].split("-")
-                    self.exif.taketime = tmp_var2[0] 
+                    self.exif.taketime = tmp_var2[0]
 
     def __str__(self):
         res = ""

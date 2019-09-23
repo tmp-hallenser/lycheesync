@@ -278,6 +278,7 @@ class LycheeSyncer:
         photo.thumbnailfullpath = self.thumbIt(sizes[0], photo, destpath, destfiles[0])
         photo.thumbnailx2fullpath = self.thumbIt(sizes[1], photo, destpath, destfiles[1])
 
+
     def copyFileToLychee(self, photo):
         """
         add a file to an album, the albumid must be previously stored in the LycheePhoto parameter
@@ -572,6 +573,7 @@ class LycheeSyncer:
                         pid = self.dao.getUniqPhotoId()
                         photo = LycheePhoto(pid, self.conf, f, album)
                         if not(self.dao.photoExists(photo)):
+                            photo.readExifData()
                             res = self.copyFileToLychee(photo)
                             if (self.isAPhoto(f)):
                                 self.adjustRotation(photo)

@@ -540,40 +540,84 @@ class LycheeDAO:
         except Exception as e:
             stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        query = ("insert into photos " +
-                 "(id, url, tags," +
-                 "public, type, " +
-                 "width, height, " +
-                 "size, star, " +
-                 "thumbUrl, album_id, " +
-                 "iso, aperture, make, " +
-                 "model, lens, shutter, focal, " +
-                 "takestamp, description, title, " +
-                 " checksum, medium, small, created_at, updated_at) " +
-                 "values " +
-                 "({}, '{}', '{}'," +
-                 "{}, '{}', " +
-                 "{}, {}, " +
-                 "'{}', {}, " +
-                 "'{}', '{}', " +
-                 "'{}', '{}', '{}', " +
-                 "'{}', '{}', '{}', '{}', " +
-                 "'{}', '{}', '{}', " +
-                 "'{}', '{}', '{}', '{}', '{}')"
-                 ).format(photo.id, photo.url, photo.exif.tags,
-                          self.conf["publicAlbum"], photo.type,
-                          photo.width, photo.height,
-                          photo.size, photo.star,
-                          photo.thumbUrl, photo.albumid,
-                          photo.exif.iso, photo.exif.aperture, photo.exif.make,
-                          photo.exif.model, photo.exif.lens, photo.exif.exposure, photo.exif.focal,
-                          stamp, photo.exif.description, photo.exif.title,
-                          photo.checksum, photo.medium, photo.small, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        logger.debug(query)
+        query = "insert into photos " + \
+                     "(id, " + \
+                     "title, " + \
+                     "description, " + \
+                     "url, " + \
+                     "tags, " + \
+                     "public, " + \
+                     "type, " + \
+                     "width, " + \
+                     "height, " + \
+                     "size, " + \
+                     "iso, " + \
+                     "aperture, " + \
+                     "make, " + \
+                     "model, " + \
+                     "lens, " + \
+                     "shutter, " + \
+                     "focal, " + \
+                     "latitude, " + \
+                     "longitude, " + \
+                     "altitude, " + \
+                     "imgDirection, " + \
+                     "takestamp, " + \
+                     "star, " + \
+                     "thumbUrl, " + \
+                     "album_id, " + \
+                     "checksum, " + \
+                     "created_at, " + \
+                     "updated_at, " + \
+                     "medium, " + \
+                     "small, " + \
+                     "thumb2x) " + \
+                 " values (" + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s, %s, %s, %s, %s, " + \
+                     "%s)"
         try:
             # logger.debug(query)
             cur = self.db.cursor()
-            res = cur.execute(query)
+            #res = cur.execute(query)
+            res = cur.execute(query,
+                ( \
+                    photo.id, \
+                    photo.exif.title, \
+                    photo.exif.description, \
+                    photo.url, \
+                    photo.exif.tags, \
+                    self.conf["publicAlbum"], \
+                    photo.type, \
+                    photo.width, \
+                    photo.height, \
+                    photo.size, \
+                    photo.exif.iso, \
+                    photo.exif.aperture, \
+                    photo.exif.make, \
+                    photo.exif.model, \
+                    photo.exif.lens, \
+                    photo.exif.exposure, \
+                    photo.exif.focal, \
+                    photo.exif.latitude, \
+                    photo.exif.longitude, \
+                    photo.exif.altitude, \
+                    photo.exif.imgDirection, \
+                    stamp, \
+                    photo.star, \
+                    photo.thumbUrl, \
+                    photo.albumid, \
+                    photo.checksum, \
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), \
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), \
+                    photo.medium, \
+                    photo.small, \
+                    photo.thumb2x
+                ))
             self.db.commit()
         except Exception as e:
             logger.exception(e)
