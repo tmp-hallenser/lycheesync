@@ -8,3 +8,5 @@ pytest-pep8
 piexif
 ffmpeg-python
 IPTCInfo3
+geopy
+iso3166
