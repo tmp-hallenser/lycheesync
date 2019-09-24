@@ -122,8 +122,6 @@ class LycheePhoto:
 
     def convert_strdate_to_timestamp(self, value):
         # check parameter type
-        # logger.debug("convert_strdate input: " + str(value))
-        # logger.debug("convert_strdate input_type: " + str(type(value)))
 
         timestamp = None
         # now in epoch time
@@ -141,7 +139,6 @@ class LycheePhoto:
             try:
                 the_date = parse(value)
                 # works for python 3
-                # timestamp = the_date.timestamp()
                 timestamp = time.mktime(the_date.timetuple())
 
             except Exception:
@@ -278,7 +275,7 @@ class LycheePhoto:
                     except Exception as e:
                         exifinfo = None
                         logger.warn('Could not obtain exif info for image: %s', e)
-                    # exifinfo = img.info['exif']
+
                     # logger.debug(exifinfo)
                     if exifinfo is not None:
                         for tag, value in exifinfo.items():
@@ -301,19 +298,7 @@ class LycheePhoto:
                                 except Exception:
                                     logger.exception("apperture not readable for %s", self.srcfullpath)
 
-                            # if decode == "MaxApertureValue":
-                            #     logger.info("raw aperture: %s %s %s", value[0], value[1], len(value))
-                            #     aperture = math.sqrt(2) ** value[0]
-                            #     try:
-                            #         aperture = decimal.Decimal(aperture).quantize(
-                            #             decimal.Decimal('.1'),
-                            #             rounding=decimal.ROUND_05UP)
-                            #     except Exception as e:
-                            #         logger.debug("aperture only a few digit after comma: {}".format(aperture))
-                            #         logger.debug(e)
-                            #     logger.info("aperture: %s %s", aperture, type(aperture))
-                            #     self.exif.aperture = "{0:.2f}".format(aperture)
-                            #     logger.info("corrected aperture: %s", self.exif.aperture)
+
                             if decode == "FocalLength":
                                 try:
                                     if isinstance(value, tuple):
@@ -449,32 +434,6 @@ class LycheePhoto:
                                 except Exception:
                                     logger.exception("exposuretime not readable for %s", self.srcfullpath)
 
-                            # if decode == "ShutterSpeedValue":
-                            #    logger.debug('YAAAAAAAAAAAAAAAAAAAAAA shutter: %s', value)
-                            #     s = value[0]
-                            #     s = 2 ** s
-                            #     s = decimal.Decimal(s).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_05UP)
-                            #     if s <= 1:
-                            #         s = decimal.Decimal(
-                            #             1 /
-                            #             float(s)).quantize(
-                            #             decimal.Decimal('0.1'),
-                            #             rounding=decimal.ROUND_05UP)
-                            #     else:
-                            #         s = "1/" + str(s)
-                            #     self.exif.shutter = str(s) + " s"
-
-                        # compute shutter speed
-
-                        # if not(self.exif.shutter) and self.exif.exposure:
-                        #     if self.exif.exposure < 1:
-                        #         e = str(Fraction(self.exif.exposure).limit_denominator())
-                        #     else:
-                        #         e = decimal.Decimal(
-                        #             self.exif.exposure).quantize(
-                        #             decimal.Decimal('0.01'),
-                        #             rounding=decimal.ROUND_05UP)
-                        #     self.exif.shutter = e
 
                             if decode == "DateTimeOriginal":
                                 try:
@@ -555,12 +514,7 @@ class LycheePhoto:
                         if self.exif.taketime:
                             taketime = self.exif.taketime
 
-                        # add mesurement units
-
                         self._str_datetime = takedate + " " + taketime
-
-                        # self.description = self._str_datetime
-
 
 
             except IOError as e:
@@ -634,7 +588,7 @@ class LycheePhoto:
                     self.exif.taketime = tmp_var2[0]
 
 
-        # Get City, State and country for a given GPS location and
+        # Get City, State, county, etc. for a given GPS location and
         # adds it to the tags
 
         # Location is set
@@ -692,6 +646,8 @@ class LycheePhoto:
                             self.exif.tags = value
                         else:
                             self.exif.tags = ", ".join((self.exif.tags, value))
+                # Field country is sometimes not set properly
+                #  -> use country code and translate back to country
                 if(key=="country_code"):
                     country = countries.get(value)[0]
                     self.exif.tags = ", ".join((self.exif.tags, country))

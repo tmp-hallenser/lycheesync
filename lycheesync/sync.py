@@ -4,13 +4,11 @@
 from __future__ import print_function
 # from __future__ import unicode_literals
 from lycheesync.lycheesyncer import LycheeSyncer
-from lycheesync.update_scripts import inf_to_lychee_2_6_2
 import logging.config
 import click
 import os
 import sys
-import pwd
-import grp
+
 
 from lycheesync.utils.boilerplatecode import script_init
 
@@ -28,8 +26,6 @@ logger = logging.getLogger(__name__)
 @click.option('-s', '--sort_album_by_name', is_flag=True, help='Sort album by name')
 @click.option('-c', '--sanitycheck', is_flag=True, help='Sort album by name')
 @click.option('-l', '--link', is_flag=True, help="Don't copy files create link instead")
-@click.option('-u26', '--updatedb26', is_flag=True,
-              help="Update lycheesync added data in lychee db to the lychee 2.6.2 required values")
 @click.argument('imagedirpath', metavar='PHOTO_DIRECTORY_ROOT',
                 type=click.Path(exists=True, resolve_path=True))
 @click.argument('lycheepath', metavar='PATH_TO_LYCHEE_INSTALL',
@@ -38,7 +34,7 @@ logger = logging.getLogger(__name__)
                 type=click.Path(exists=True, resolve_path=True))
 # checks file existence and attributes
 # @click.argument('file2', type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True, resolve_path=True))
-def main(verbose, exclusive_mode, sort_album_by_name, sanitycheck, link, updatedb26, imagedirpath, lycheepath, confpath):
+def main(verbose, exclusive_mode, sort_album_by_name, sanitycheck, link, imagedirpath, lycheepath, confpath):
     """Lycheesync
 
     A script to synchronize any directory containing photos with Lychee.
@@ -74,28 +70,9 @@ def main(verbose, exclusive_mode, sort_album_by_name, sanitycheck, link, updated
         logger.info("!!!!!!!!!!!!!!!! SANITY OFF")
     conf_data["sanity"] = sanitycheck
     conf_data["link"] = link
-    # if conf_data["dropdb"]:
-    #    conf_data["sort"] = True
 
-    # read permission of the lycheepath directory to apply it to the uploade photos
-    img_path = os.path.join(conf_data["lycheepath"], "uploads", "big")
-#    stat_info = os.stat(img_path)
-#    uid = stat_info.st_uid
-#    gid = stat_info.st_gid
-
-#    user = pwd.getpwuid(uid)[0]
-#    group = grp.getgrgid(gid)[0]
-
-#    conf_data["user"] = user
-#    conf_data["group"] = group
-#    conf_data["uid"] = uid
-#    conf_data["gid"] = gid
 
     script_init(conf_data)
-
-    # DB update
-    if updatedb26:
-        inf_to_lychee_2_6_2.updatedb(conf_data)
 
     logger.info("=================== start adding to lychee ==================")
     try:

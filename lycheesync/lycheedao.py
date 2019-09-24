@@ -20,7 +20,6 @@ class LycheeDAO:
     """
 
     db = None
-    db2 = None
     conf = None
     albumslist = {}
 
@@ -65,10 +64,6 @@ class LycheeDAO:
             logger.error(e)
             raise
 
-    def sqlProtect(self, str):
-        res = str.replace('"', '\\"')
-        res = res.replace("'", "\\'")
-        return res
 
     def getUniqPhotoId(self):
         id = self.getUniqTimeBasedId()
@@ -170,8 +165,6 @@ class LycheeDAO:
         """
 
         res = True
-        #newdate = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        #logger.warn("updateAlbumDate currently using time 'now' instead of most recent image date" )
         try:
             qry = "update albums set updated_at= '" + str(datetime.datetime.fromtimestamp(newdate).strftime('%Y-%m-%d %H:%M:%S')) + "' where id=" + str(albumid)
             cur = self.db.cursor()
@@ -197,7 +190,6 @@ class LycheeDAO:
             cur.execute(photo_query)
             cur.execute(album_query)
             self.db.commit()
-            # logger.debug("album id changed: " + str(oldid) + " to " + str(newid))
         except Exception as e:
             logger.exception(e)
             logger.error("album id changed: " + str(oldid) + " to " + str(newid))
@@ -218,7 +210,6 @@ class LycheeDAO:
         for row in rows:
             self.albumslist[row['title']] = (row['id'], row['parent_id'])
 
-        # logger.debug("album list in db:" + str(self.albumslist))
         return self.albumslist
 
     def albumIdExists(self, album_id):
@@ -387,7 +378,6 @@ class LycheeDAO:
         cur = None
         try:
             cur = self.db.cursor()
-            # logger.debug("try to createAlbum: %s", query)
             # duplicate of previous query to use driver quote protection features
             if album['parent_id'] != 0:
                 cur.execute("insert into albums (id, title, parent_id, created_at, public, password, description) values (%s,%s, %s,%s,%s,NULL,'')", (album[
@@ -397,15 +387,7 @@ class LycheeDAO:
                         'id'], album['name'], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), str(self.conf["publicAlbum"])))
 
             self.db.commit()
-
-            #if album['parent_id'] != 0:
-            #    cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id=%s)", (album['name'], str(album['parent_id'])))
-            #else:
-            #    cur.execute("select id,parent_id from albums where (title=%s) AND (parent_id is NULL)", (album['name']))
-
-            #row = cur.fetchone()
             self.albumslist[album['name']] = (album['id'], album['parent_id'])
-            # album['id'] = row['id']
 
         except Exception as e:
             logger.exception(e)
@@ -432,7 +414,6 @@ class LycheeDAO:
                 res.append(row['url'])
             cur.execute(query)
             self.db.commit()
-            # logger.debug("album photos erased: ", album_id)
         except Exception as e:
             logger.exception(e)
             logger.error("eraseAlbum")
@@ -511,22 +492,6 @@ class LycheeDAO:
         finally:
             return res
 
-    def get_album_ids_titles(self):
-        res = None
-        try:
-            # check if exists in db
-            sql = "select id, title from albums"
-            with self.db.cursor() as cursor:
-                cursor.execute(sql)
-                rows = cursor.fetchall()
-            res = rows
-        except Exception as e:
-            # logger.exception(e)
-            res = None
-            raise e
-        finally:
-            return res
-
     def addFileToAlbum(self, photo):
         """
         Add a photo to an album
@@ -581,9 +546,7 @@ class LycheeDAO:
                      "%s, %s, %s, %s, %s, " + \
                      "%s)"
         try:
-            # logger.debug(query)
             cur = self.db.cursor()
-            #res = cur.execute(query)
             res = cur.execute(query,
                 ( \
                     photo.id, \

@@ -496,10 +496,6 @@ class LycheeSyncer:
             album['parent_id'] = None
             album['parent_folders'] = None
 
-            # if a there is at least one photo in the files
-            # if any([self.isAPhoto(f) for f in files]):
-            # -> we need to create all folders for the case of subfolders
-
 
             # Fill in other album properties
             # albumnames start at srcdir (to avoid absolute path albumname)
