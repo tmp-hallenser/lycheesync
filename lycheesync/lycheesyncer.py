@@ -166,17 +166,22 @@ class LycheeSyncer:
                 sys.exit(1)
         return destimage
 
-    def scale(self, res, photo, destinationpath):
+    def scale(self, res, photo, destinationpath, version_2x):
         """
         Create the scaled version of a given photo
         Parameters:
         - res: should be a set of h and v res
         - photo: a valid LycheePhoto object
-        - destinationpath: a string the destination full path of the thumbnail (without filename)
+        - destinationpath: a string the destination full path of the scaled version (without filename)
+        - version_2x: Boolean to indicate creation of 2x version
         """
-
+        destimage = ""
         if photo.isPhoto:
-            destimage = os.path.join(destinationpath, photo.url)
+            if(version_2x==False):
+                destimage = os.path.join(destinationpath, photo.url)
+            else:
+                filename, file_extension = os.path.splitext(photo.url)
+                destimage = os.path.join(destinationpath, filename + '@2x' + file_extension)
             try:
                 img = Image.open(photo.destfullpath)
             except Exception as e:
@@ -185,11 +190,15 @@ class LycheeSyncer:
                 raise
 
             img.thumbnail(res, Image.ANTIALIAS)
+            print(destimage)
             img.save(destimage, quality=99)
 
         if photo.isVideo:
             filesplit = os.path.splitext(photo.url)
-            destimage = os.path.join(destinationpath, ''.join([filesplit[0], ".jpg"]).lower())
+            if(version_2x==False):
+                destimage = os.path.join(destinationpath, ''.join([filesplit[0], ".jpg"]).lower())
+            else:
+                destimage = os.path.join(destinationpath, ''.join([filesplit[0], "@2x.jpg"]).lower())
             try:
                 (
                     ffmpeg
@@ -203,53 +212,42 @@ class LycheeSyncer:
                 print(e.stderr.decode(), file=sys.stderr)
                 sys.exit(1)
 
-    def makeSmall(self, photo):
+    def makeSmallerVersion(self, photo, version, version_2x, max_height, max_width):
         """
         Make the small image which is needed by Lychee for a given photo
         and update flag in the photo object
         Parameters:
         - photo: a valid LycheePhoto object
-        returns nothing
+        returns the resolution or an empty string
         """
-        if (photo.height > 360):
+
+        create_smaller_version = False
+        height = 0
+        width = 0
+
+        if (photo.height > max_height):
             # set height
-            height = 360
+            height = max_height
             width = int(round((photo.width / photo.height) * height ))
+            create_smaller_version = True
 
-            if (width > 640):
-                    width = 640
-                    height = int(round((photo.height / photo.width) * width ))
+        if (width > max_width):
+            width = max_width
+            height = int(round((photo.height / photo.width) * width ))
+            create_smaller_version = True
 
+        if (create_smaller_version):
             # compute destination path
-            destpath = os.path.join(self.conf["lycheepath"], "uploads", "small")
+            destpath = os.path.join(self.conf["lycheepath"], "uploads", version)
 
             # make small version of image
-            photo.small = str(width) + "x" + str(height)
-            self.scale((width, height), photo, destpath)
+            self.scale((width, height), photo, destpath, version_2x)
+            return str(width) + "x" + str(height)
 
-    def makeMedium(self, photo):
-        """
-        Make the medium image which is needed by Lychee for a given photo
-        and update flag in the photo object
-        Parameters:
-        - photo: a valid LycheePhoto object
-        returns nothing
-        """
-        if (photo.height > 1080):
-            # set height
-            height = 1080
-            width = int(round((photo.width / photo.height) * height ))
+        return ""
 
-            if (width > 1920):
-                width = 1920
-                height = int(round((photo.height / photo.width) * width ))
 
-            # compute destination path
-            destpath = os.path.join(self.conf["lycheepath"], "uploads", "medium")
 
-            # make small version of image
-            photo.medium = str(width) + "x" + str(height)
-            self.scale((width, height), photo, destpath)
 
 
     def makeThumbnail(self, photo):
@@ -329,17 +327,23 @@ class LycheeSyncer:
 
         for url in filelist:
             if self.isAPhotoOrVideo(url) :
-                thumbpath = os.path.join(self.conf["lycheepath"], "uploads", "thumb", url)
+
                 filesplit = os.path.splitext(url)
-                thumb2path = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
-                thumb2path = os.path.join(self.conf["lycheepath"], "uploads", "thumb", thumb2path)
+                filename2x = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
+
+                thumbpath = os.path.join(self.conf["lycheepath"], "uploads", "thumb", url)
+                thumb2xpath = os.path.join(self.conf["lycheepath"], "uploads", "thumb", filename2x)
                 smallpath = os.path.join(self.conf["lycheepath"], "uploads", "small", url)
+                small2xpath = os.path.join(self.conf["lycheepath"], "uploads", "small", filename2x)
                 mediumpath = os.path.join(self.conf["lycheepath"], "uploads", "medium", url)
+                medium2xpath = os.path.join(self.conf["lycheepath"], "uploads", "medium", filename2x)
                 bigpath = os.path.join(self.conf["lycheepath"], "uploads", "big", url)
                 remove_file(thumbpath)
-                remove_file(thumb2path)
+                remove_file(thumb2xpath)
                 remove_file(smallpath)
+                remove_file(small2xpath)
                 remove_file(mediumpath)
+                remove_file(medium2xpath)
                 remove_file(bigpath)
 
     def adjustRotation(self, photo):
@@ -577,8 +581,12 @@ class LycheeSyncer:
                             self.makeThumbnail(photo)
 
                             if (self.isAPhoto(f)):
-                                self.makeMedium(photo)
-                            self.makeSmall(photo)
+                                #self.makeMedium(photo)
+                                photo.medium = self.makeSmallerVersion(photo, "medium", False, 1080, 1920)
+                                photo.medium2x = self.makeSmallerVersion(photo, "medium", True, 2*1080, 2*1920)
+                            #self.makeSmall(photo)
+                            photo.small = self.makeSmallerVersion(photo, "small", False, 360, 640)
+                            photo.small2x = self.makeSmallerVersion(photo, "small", True, 2*360, 2*640)
 
                             res = self.dao.addFileToAlbum(photo)
                             # increment counter

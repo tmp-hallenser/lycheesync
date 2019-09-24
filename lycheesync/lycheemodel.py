@@ -115,7 +115,9 @@ class LycheePhoto:
     _str_datetime = None
     checksum = ""
     medium = ""
+    medium2x = ""
     small = ""
+    small2x = ""
     thumb2x = 1
     isPhoto = False
     isVideo = False
@@ -595,10 +597,7 @@ class LycheePhoto:
         if ((self.exif.longitude != None) and (self.exif.latitude != None)):
 
             geolocator = Nominatim(user_agent="lychee sync")
-            print(self.exif.latitude)
-            print(self.exif.longitude)
             location = geolocator.reverse(str(self.exif.latitude) + ", " + str(self.exif.longitude))
-            print(location.raw)
             address = location.raw['address']
             for key, value in address.items():
                 if((key=="island") or \

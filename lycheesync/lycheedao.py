@@ -535,7 +535,9 @@ class LycheeDAO:
                      "created_at, " + \
                      "updated_at, " + \
                      "medium, " + \
+                     "medium2x, " + \
                      "small, " + \
+                     "small2x, " + \
                      "thumb2x) " + \
                  " values (" + \
                      "%s, %s, %s, %s, %s, " + \
@@ -544,7 +546,7 @@ class LycheeDAO:
                      "%s, %s, %s, %s, %s, " + \
                      "%s, %s, %s, %s, %s, " + \
                      "%s, %s, %s, %s, %s, " + \
-                     "%s)"
+                     "%s, %s, %s)"
         try:
             cur = self.db.cursor()
             res = cur.execute(query,
@@ -578,7 +580,9 @@ class LycheeDAO:
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), \
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), \
                     photo.medium, \
+                    photo.medium2x, \
                     photo.small, \
+                    photo.small2x, \
                     photo.thumb2x
                 ))
             self.db.commit()
