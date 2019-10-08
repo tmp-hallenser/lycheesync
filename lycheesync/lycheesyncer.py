@@ -190,7 +190,7 @@ class LycheeSyncer:
                 raise
 
             img.thumbnail(res, Image.ANTIALIAS)
-            print(destimage)
+
             img.save(destimage, quality=99)
 
         if photo.isVideo:

@@ -1,0 +1,13 @@
+{
+	"db":"lychee_db", 
+	"dbUser":"lychee", 
+	"dbPassword":"lychee", 
+	"dbHost":"mysql", 
+	"thumbQuality":80, 
+	"publicAlbum": 0, 
+	"excludeAlbums": [ 
+			"", 
+			"", 
+			""  
+	] 
+} 

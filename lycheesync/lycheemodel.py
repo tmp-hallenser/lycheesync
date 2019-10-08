@@ -17,6 +17,7 @@ import ffmpeg
 
 from geopy.geocoders import Nominatim #decode GPS position
 from iso3166 import countries # translation country code to country
+from iso6709 import Location # convert iso6709 location data to normal decimal
 
 logger = logging.getLogger(__name__)
 
@@ -557,7 +558,7 @@ class LycheePhoto:
 
         if self.isVideo:
 
-            self.exif.title = self.originalname
+            self.exif.title = os.path.splitext(self.originalname)[0]
 
             probe = ffmpeg.probe(self.srcfullpath)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
@@ -576,18 +577,37 @@ class LycheePhoto:
                         self.height = self.width
                         self.width = tmp
 
-                # Check if creation date was set
-                if "creation_time" in tags:
-                    split_timestamp = tags["creation_time"].split("T")
-                    self.exif.takedate = split_timestamp[0]
+            if "format" in probe:
+                if "tags" in probe["format"]:
+                    tags = probe["format"]["tags"]
+                    # Check if creation date was set
+                    if "com.apple.quicktime.creationdate" in tags:
+                        split_timestamp = tags["com.apple.quicktime.creationdate"].split("T")
+                        self.exif.takedate = split_timestamp[0]
 
-                    # Time can have the following formats
-                    # 1. HH:MM:SS
-                    # 2. HH:MM:SS+HHMM
-                    # 3. HH:MM:SS-HHMM
-                    tmp_var1 = split_timestamp[1].split("+")
-                    tmp_var2 = tmp_var1[0].split("-")
-                    self.exif.taketime = tmp_var2[0]
+                        # Time can have the following formats
+                        # 1. HH:MM:SS
+                        # 2. HH:MM:SS+HHMM
+                        # 3. HH:MM:SS-HHMM
+                        tmp_var1 = split_timestamp[1].split("+")
+                        tmp_var2 = tmp_var1[0].split("-")
+                        self.exif.taketime = tmp_var2[0]
+
+                    # Check if make was set
+                    if "com.apple.quicktime.make" in tags:
+                        self.exif.make = tags["com.apple.quicktime.make"]
+
+                    # Check if model was set
+                    if "com.apple.quicktime.model" in tags:
+                        self.exif.model = tags["com.apple.quicktime.model"]
+
+                    # Check if location data was set
+                    if "com.apple.quicktime.location.ISO6709" in tags:
+                        iso6709_data = tags["com.apple.quicktime.location.ISO6709"]
+                        loc = Location(iso6709_data)
+                        self.exif.latitude = loc.lat.decimal
+                        self.exif.longitude = loc.lng.decimal
+                        self.exif.altitude = loc.alt
 
 
         # Get City, State, county, etc. for a given GPS location and

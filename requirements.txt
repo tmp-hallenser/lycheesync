@@ -10,3 +10,4 @@ ffmpeg-python
 IPTCInfo3
 geopy
 iso3166
+iso6709
