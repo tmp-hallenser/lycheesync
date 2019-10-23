@@ -664,7 +664,7 @@ class LycheePhoto:
                         if(self.exif.tags==""):
                             self.exif.tags = value
                         else:
-                            self.exif.tags = ", ".join((self.exif.tags, value))
+                            self.exif.tags = ",".join((self.exif.tags, value))
                 # Field country is sometimes not set properly
                 #  -> use country code and translate back to country
                 if(key=="country_code"):
