@@ -89,8 +89,8 @@ class LycheeDAO:
     def Is32Bit(self):
         # See https://stackoverflow.com/a/1406849
         if (struct.calcsize("P") * 8 == 32):
-            return true
-        return false
+            return True
+        return False
 
     def getUniqTimeBasedId(self):
         # Compute Photo ID
