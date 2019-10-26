@@ -215,8 +215,6 @@ class LycheePhoto:
         if ('star' in self.originalname) or ('cover' in self.originalname):
             self.star = 1
 
-        assert len(self.id) == 14, "id {} is not 14 character long: {}".format(self.id, str(len(self.id)))
-
         # Compute file storage url
         m = hashlib.md5()
         m.update(self.id.encode('utf-8'))
@@ -669,7 +667,7 @@ class LycheePhoto:
                 #  -> use country code and translate back to country
                 if(key=="country_code"):
                     country = countries.get(value)[0]
-                    self.exif.tags = ", ".join((self.exif.tags, country))
+                    self.exif.tags = ",".join((self.exif.tags, country))
 
     def __str__(self):
         res = ""
