@@ -72,6 +72,8 @@ class LycheeDAO:
         while (self.photoIdExists(id)):
             id = self.getUniqTimeBasedId()
             nbtry += 1
+            # Wait for 300 milliseconds
+            time.sleep(.300)
             if (nbtry == 5):
                 raise Exception("didn't manage to create uniq id")
         return id
@@ -82,6 +84,8 @@ class LycheeDAO:
         while (self.albumIdExists(id)):
             id = self.getUniqTimeBasedId()
             nbtry += 1
+            # Wait for 300 milliseconds
+            time.sleep(.300)
             if (nbtry == 5):
                 raise Exception("didn't manage to create uniq id")
         return id
