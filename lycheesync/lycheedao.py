@@ -84,14 +84,23 @@ class LycheeDAO:
             if (nbtry == 5):
                 raise Exception("didn't manage to create uniq id")
         return id
+    
+    def Is32Bit(self):
+        # See https://stackoverflow.com/a/1406849
+        if (struct.calcsize("P") * 8 == 32):
+            return true
+        return false
 
     def getUniqTimeBasedId(self):
         # Compute Photo ID
         id = str(int(time.time()))
         # not precise enough
         length = len(id)
-        if length < 14:
-            missing_char = 14 - length
+        target_length = 14
+        if self.Is32Bit():
+            target_length = 10
+        if length < target_length:
+            missing_char = target_length - length
             r = random.random()
             r = str(r)
             # last missing_char char
