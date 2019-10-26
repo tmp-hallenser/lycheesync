@@ -8,7 +8,7 @@ import re
 import logging
 import time
 import random
-import strcut
+import struct
 from dateutil.parser import parse
 
 logger = logging.getLogger(__name__)
