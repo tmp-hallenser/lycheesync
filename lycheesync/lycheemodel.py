@@ -614,7 +614,7 @@ class LycheePhoto:
         # Location is set
         if ((self.exif.longitude != None) and (self.exif.latitude != None)):
 
-            geolocator = Nominatim(user_agent="lychee sync")
+            geolocator = Nominatim(user_agent="lychee sync", timeout=3)
             location = geolocator.reverse(str(self.exif.latitude) + ", " + str(self.exif.longitude))
             address = location.raw['address']
             for key, value in address.items():
