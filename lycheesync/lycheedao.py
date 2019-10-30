@@ -74,7 +74,7 @@ class LycheeDAO:
             nbtry += 1
             # Wait for 300 milliseconds
             time.sleep(.300)
-            if (nbtry == 5):
+            if (nbtry == 50):
                 raise Exception("didn't manage to create uniq id")
         return id
 
@@ -86,7 +86,7 @@ class LycheeDAO:
             nbtry += 1
             # Wait for 300 milliseconds
             time.sleep(.300)
-            if (nbtry == 5):
+            if (nbtry == 50):
                 raise Exception("didn't manage to create uniq id")
         return id
     
