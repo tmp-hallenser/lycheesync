@@ -191,7 +191,7 @@ class LycheeSyncer:
 
             img.thumbnail(res, Image.ANTIALIAS)
 
-            img.save(destimage, quality=99)
+            img.save(destimage, quality=90)
 
         if photo.isVideo:
             filesplit = os.path.splitext(photo.url)
